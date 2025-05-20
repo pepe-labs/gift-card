@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scratch Card Gift</title>
+  <!-- Prevent touchmove on document -->
+  <script>
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.classList.contains('scratch-card-canvas')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
     /* Basic styling */
@@ -17,6 +25,8 @@
       background-image: radial-gradient(circle, #fff 60%, #cfcecb);
       font-family: sans-serif;
       padding: 20px;
+      margin: 0;
+      box-sizing: border-box;
     }
 
     .hidden {
@@ -31,6 +41,7 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       max-width: 500px;
       width: 100%;
+      box-sizing: border-box;
     }
 
     h2 {
@@ -63,6 +74,7 @@
       border: 1px solid #ddd;
       border-radius: 5px;
       font-size: 16px;
+      box-sizing: border-box;
     }
 
     button {
@@ -104,6 +116,13 @@
       margin-top: 0;
     }
 
+    #card-display {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
     .card-wrapper {
       display: flex;
       flex-direction: column;
@@ -111,10 +130,11 @@
       background-color: white;
       border-radius: 12px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      padding: 15px; /* Smaller padding on mobile */
+      padding: 15px;
+      width: calc(100% - 20px);
       max-width: 400px;
-      width: 90%; /* Use percentage instead of 100% */
       margin: 0 auto;
+      box-sizing: border-box;
     }
 
     .card-header {
@@ -156,20 +176,23 @@
       border: 4px solid #c7c6cf;
       border-radius: 8px;
       padding: 12px;
-      width: 100%; /* Change from fixed 320px */
-      max-width: 320px; /* Keep max width */
-      height: auto; /* Change from fixed height */
-      aspect-ratio: 1/1; /* Maintain square shape */
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      aspect-ratio: 1/1;
       background-color: #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin: 0 auto; /* Center the card */
-      /* Add this to prevent scrolling on mobile */
+      margin: 0 auto;
+      box-sizing: border-box;
+      overflow: hidden;
+      /* Prevent touch action */
       touch-action: none;
+      -webkit-overflow-scrolling: none;
     }
 
     .scratch-card-cover-container {
       position: absolute;
-      z-index: 1;
+      z-index: 3;
       top: 0;
       left: 0;
       border-radius: 4px;
@@ -177,6 +200,10 @@
       height: 100%;
       filter: url('#remove-black');
       transition: opacity .4s;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+      /* Prevent touch action */
+      touch-action: none;
     }
 
     .scratch-card-cover-container.clear {
@@ -189,13 +216,18 @@
 
     .scratch-card-canvas {
       position: absolute;
-      z-index: 2;
+      z-index: 4;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       cursor: grab;
-      touch-action: none;
+      touch-action: none !important;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
     }
 
     .scratch-card-canvas.hidden {
@@ -287,6 +319,8 @@
       filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.16));
       user-select: none;
       will-change: transform;
+      position: relative;
+      z-index: 0;
     }
 
     .scratch-card-image.animate {
@@ -316,6 +350,7 @@
       width: calc(100% - 30px);
       max-width: 340px;
       transition: all 0.3s ease;
+      box-sizing: border-box;
     }
     
     .scratch-card-text i {
@@ -330,9 +365,10 @@
       padding: 20px;
       margin-top: 20px;
       width: 90%;
-      display: none;
-      text-align: center; /* Center the heading */
       max-width: 400px;
+      display: none;
+      text-align: center;
+      box-sizing: border-box;
     }
 
     #claim-instructions h3 {
@@ -343,10 +379,10 @@
     }
 
     #claim-instructions ol {
-      margin-left: 0; /* Remove default left margin */
-      padding-left: 20px; /* Use padding for the list markers */
-      text-align: left; /* Left align the list items */
-      display: inline-block; /* Makes the list respect the text-align center of parent */
+      margin-left: 0;
+      padding-left: 20px;
+      text-align: left;
+      display: inline-block;
       margin-top: 15px;
     }
 
@@ -354,7 +390,7 @@
       margin-bottom: 12px;
       font-size: 16px;
       color: #333;
-      text-align: left; /* Ensure text is left-aligned */
+      text-align: left;
     }
 
     #claim-instructions a {
@@ -378,7 +414,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -120%);
-      z-index: 0.5;
+      z-index: 1;
       will-change: transform;
       backface-visibility: hidden;
       -webkit-font-smoothing: subpixel-antialiased;
@@ -406,18 +442,18 @@
 
     .amount-overlay .currency-symbol {
       display: inline-flex;
-      align-items: flex-start; /* Align to top */
+      align-items: flex-start;
       margin-right: 3px;
-      transform: translateY(-4px); /* Move P up a bit */
+      transform: translateY(-4px);
     }
 
     .amount-overlay .currency-symbol img {
-      height: 14px; /* Smaller P logo */
+      height: 14px;
       width: auto;
     }
 
     .amount-overlay .amount-value {
-      font-size: 30px; /* Bigger amount text */
+      font-size: 30px;
       font-weight: bold;
       color: #000;
       font-family: sans-serif;
@@ -426,19 +462,20 @@
     /* mobile-specific adjustments */
     @media (max-width: 480px) {
       body {
-        padding: 10px; /* Reduce body padding on mobile */
+        padding: 10px;
       }
       
       .scratch-card {
-        max-width: 280px; /* Slightly smaller on very small screens */
+        max-width: 280px;
       }
       
       .card-wrapper {
         padding: 10px;
         width: 95%;
       }
+      
       #claim-instructions ol {
-        padding-left: 25px; /* Slightly more padding on mobile */
+        padding-left: 25px;
       }
       
       #claim-instructions {
@@ -446,6 +483,20 @@
       }
     }
 
+    /* Debug display */
+    #debug-info {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      max-width: 200px;
+      z-index: 1000;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -524,16 +575,18 @@
     </div>
   </div>
 
-
   <div id="claim-instructions">
-        <h3>How to Claim Your Pepecoin Gift</h3>
-        <ol>
-          <li>Visit <a href="https://pepecoin.org" target="_blank">Pepecoin.org</a></li>
-          <li>Create a new wallet</li>
-          <li>Send your Pepecoin wallet address to: <span id="contact-email">sender@email.com</span></li>
-          <li>Your gift will be sent to your wallet!</li>
-        </ol>
-      </div>
+    <h3>How to Claim Your Pepecoin Gift</h3>
+    <ol>
+      <li>Visit <a href="https://pepecoin.org" target="_blank">Pepecoin.org</a></li>
+      <li>Create a new wallet</li>
+      <li>Send your Pepecoin wallet address to: <span id="contact-email">sender@email.com</span></li>
+      <li>Your gift will be sent to your wallet!</li>
+    </ol>
+  </div>
+
+  <!-- Debug info display (can be removed in production) -->
+  <div id="debug-info"></div>
 
   <!-- SVG Filters (exactly from original) -->
   <svg width="0" height="0">
@@ -554,6 +607,24 @@
   </svg>
 
   <script>
+    // Debug helper function
+    function debugLog(message) {
+      console.log(message);
+      const debugElement = document.getElementById('debug-info');
+      debugElement.style.display = 'block';
+      debugElement.textContent = message;
+      setTimeout(() => {
+        debugElement.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Prevent scrolling when touching the scratch card
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.classList.contains('scratch-card-canvas')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
     // Encryption functions with XOR - hides the amount in the URL
     function encryptData(data, key = "pepegift") {
       const jsonStr = JSON.stringify(data);
@@ -761,14 +832,16 @@
       }
     }
 
-    // Original scratch card functionality with fixes for mobile
+    // Fixed scratch card functionality for mobile
     function initScratchCard(cardData) {
+      // Device detection
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      console.log(`Device detection: isSafari=${isSafari}, isIOS=${isIOS}, isMobile=${isMobile}`);
+      debugLog(`Device: ${isMobile ? 'Mobile' : 'Desktop'}, Safari: ${isSafari}, iOS: ${isIOS}`);
       
+      // Get DOM elements
       const scratchCardCover = document.querySelector('.scratch-card-cover');
       const scratchCardCanvasRender = document.querySelector('.scratch-card-canvas-render');
       const scratchCardCoverContainer = document.querySelector('.scratch-card-cover-container');
@@ -777,174 +850,115 @@
       const scratchCardDescription = document.querySelector('.scratch-instruction');
       const canvas = document.querySelector('.scratch-card-canvas');
       const context = canvas.getContext('2d');
-      let positionX;
-      let positionY;
+      
+      // Variables to track position
+      let positionX, positionY;
       let clearDetectionTimeout = null;
       let previousUrl;
       
-      // Set up canvas dimensions correctly
+      // Get device pixel ratio and set up canvas
       const devicePixelRatio = window.devicePixelRatio || 1;
-      const canvasWidth = canvas.offsetWidth * devicePixelRatio;
-      const canvasHeight = canvas.offsetHeight * devicePixelRatio;
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * devicePixelRatio;
+        canvas.height = rect.height * devicePixelRatio;
+        context.scale(devicePixelRatio, devicePixelRatio);
+        
+        // Draw a small dot to ensure context is initialized
+        context.fillStyle = '#000';
+        context.beginPath();
+        context.arc(canvas.width/2, canvas.height/2, 2, 0, Math.PI * 2);
+        context.fill();
+        
+        debugLog(`Canvas size: ${canvas.width}x${canvas.height}`);
+      }
       
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      context.scale(devicePixelRatio, devicePixelRatio);
+      // Initialize canvas
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
       
-      console.log(`Canvas size set to ${canvas.width} x ${canvas.height}`);
+      // Apply iOS-specific fixes
+      if (isIOS) {
+        document.querySelector('.scratch-card-image').style.zIndex = '0';
+        document.querySelector('.scratch-card-cover-container').style.zIndex = '3';
+        document.querySelector('.scratch-card-canvas').style.zIndex = '4';
+      }
       
+      // Safari-specific handling
       if (isSafari) {
         canvas.classList.add('hidden');
       }
       
-      // Essential function for getting position
-      const getPosition = ({ clientX, clientY }) => {
-        const { left, top } = canvas.getBoundingClientRect();
+      // FIXED VERSION: Helper function to get position relative to canvas
+      function getPosition(event) {
+        const rect = canvas.getBoundingClientRect();
+        // For touch events, use clientX/clientY directly
+        const clientX = event.clientX || event.touches[0].clientX;
+        const clientY = event.clientY || event.touches[0].clientY;
+        
         return {
-          x: clientX - left,
-          y: clientY - top,
+          x: clientX - rect.left,
+          y: clientY - rect.top
         };
-      };
+      }
       
-      // Essential function for drawing the scratched areas
-      const plotLine = (x1, y1, x2, y2) => {
+      // FIXED VERSION: Draw a line of circles between two points
+      function plotLine(x1, y1, x2, y2) {
+        // CRITICAL FIX: Ensure fill style is set to black
         context.fillStyle = '#000';
-        var diffX = Math.abs(x2 - x1);
-        var diffY = Math.abs(y2 - y1);
-        var dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        var step = dist / 40; // Slightly increased density
-        var i = 0;
-        var t;
-        var x;
-        var y;
+        
+        const diffX = Math.abs(x2 - x1);
+        const diffY = Math.abs(y2 - y1);
+        const dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        const step = dist / 30; // More points for smoother scratching
+        
+        let i = 0;
+        let t, x, y;
+        
         while (i < dist) {
           t = Math.min(1, i / dist);
           x = x1 + (x2 - x1) * t;
           y = y1 + (y2 - y1) * t;
+          
           context.beginPath();
-          context.arc(x, y, 18, 0, Math.PI * 2); // Slightly larger brush
+          context.arc(x, y, 18, 0, Math.PI * 2);
           context.fill();
+          
           i += step;
         }
-      };
+        
+        // Draw a line as well for better coverage
+        context.lineWidth = 18;
+        context.lineCap = 'round';
+        context.strokeStyle = '#000';
+        context.beginPath();
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        context.stroke();
+      }
       
-      // Safari-specific function
-      const setImageFromCanvas = () => {
+      // FIXED VERSION: Safari image rendering
+      function setImageFromCanvas() {
         canvas.toBlob((blob) => {
           const url = URL.createObjectURL(blob);
           previousUrl = scratchCardCanvasRender.src;
           scratchCardCanvasRender.src = url;
+          
           if (!previousUrl) {
             scratchCardCanvasRender.classList.remove('hidden');
           } else {
             URL.revokeObjectURL(previousUrl);
           }
+          
           previousUrl = url;
         });
-      };
-      
-      // Mobile-specific touch event handlers
-      if (isMobile) {
-        console.log("Adding direct touch event handlers");
-        
-        // Touch start
-        canvas.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          const touch = e.touches[0];
-          scratchCardCover.classList.remove('shine');
-          const pos = getPosition(touch);
-          positionX = pos.x;
-          positionY = pos.y;
-          
-          // Draw initial point
-          context.beginPath();
-          context.fillStyle = '#000';
-          context.arc(positionX, positionY, 18, 0, Math.PI * 2);
-          context.fill();
-          
-          clearTimeout(clearDetectionTimeout);
-        }, { passive: false });
-        
-        // Touch move
-        canvas.addEventListener('touchmove', function(e) {
-          e.preventDefault();
-          const touch = e.touches[0];
-          const pos = getPosition(touch);
-          
-          plotLine(positionX, positionY, pos.x, pos.y);
-          positionX = pos.x;
-          positionY = pos.y;
-          
-          if (isSafari) {
-            clearTimeout(setImageTimeout);
-            setImageTimeout = setTimeout(() => {
-              setImageFromCanvas();
-            }, 5);
-          }
-        }, { passive: false });
-        
-        // Touch end
-        canvas.addEventListener('touchend', function(e) {
-          e.preventDefault();
-          clearDetectionTimeout = setTimeout(() => {
-            checkBlackFillPercentage();
-          }, 500);
-        }, { passive: false });
-        
-        // Also add touch capture to prevent scrolling on the card
-        document.querySelector('.scratch-card').addEventListener('touchmove', function(e) {
-          e.preventDefault();
-        }, { passive: false });
       }
       
-      // Keep the original pointer events for desktop
-      let setImageTimeout = null;
-      
-      canvas.addEventListener('pointerdown', (e) => {
-        // For mobile, use touch events instead
-        if (isMobile && e.pointerType === 'touch') return;
-        
-        scratchCardCover.classList.remove('shine');
-        ({ x: positionX, y: positionY } = getPosition(e));
-        clearTimeout(clearDetectionTimeout);
-        
-        // Draw initial dot
-        context.beginPath();
-        context.fillStyle = '#000';
-        context.arc(positionX, positionY, 18, 0, Math.PI * 2);
-        context.fill();
-        
-        canvas.addEventListener('pointermove', plot);
-        
-        window.addEventListener('pointerup', (e) => {
-          canvas.removeEventListener('pointermove', plot);
-          clearDetectionTimeout = setTimeout(() => {
-            checkBlackFillPercentage();
-          }, 500);
-        }, { once: true });
-      });
-      
-      const plot = (e) => {
-        e.preventDefault(); // Prevent default behavior
-        const { x, y } = getPosition(e);
-        plotLine(positionX, positionY, x, y);
-        positionX = x;
-        positionY = y;
-        if (isSafari) {
-          clearTimeout(setImageTimeout);
-          setImageTimeout = setTimeout(() => {
-            setImageFromCanvas();
-          }, 5);
-        }
-      };
-      
-      const checkBlackFillPercentage = () => {
-        console.log("Checking scratch percentage...");
-        
-        const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+      // Check if enough of the card has been scratched
+      function checkBlackFillPercentage() {
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const pixelData = imageData.data;
         let blackPixelCount = 0;
-        const totalPixels = canvasWidth * canvasHeight / (devicePixelRatio * devicePixelRatio);
         
         for (let i = 0; i < pixelData.length; i += 4) {
           const red = pixelData[i];
@@ -952,47 +966,48 @@
           const blue = pixelData[i + 2];
           const alpha = pixelData[i + 3];
           
-          // Check for dark pixels (not just perfect black)
+          // More lenient detection for "black" pixels
           if (red < 50 && green < 50 && blue < 50 && alpha > 200) {
             blackPixelCount++;
           }
         }
         
+        const totalPixels = canvas.width * canvas.height / (devicePixelRatio * devicePixelRatio);
         const blackFillPercentage = blackPixelCount * 100 / totalPixels;
-        console.log(`Scratch percentage: ${blackFillPercentage.toFixed(2)}%`);
-       
-        if (blackFillPercentage >= 35) { // Lower threshold for easier scratching
-          console.log("Scratch threshold reached!");
-          
+        
+        debugLog(`Scratch: ${blackFillPercentage.toFixed(2)}%`);
+        
+        if (blackFillPercentage >= 35) {
           scratchCardCoverContainer.classList.add('clear');
           
-          // Launch confetti with responsive positioning
+          // Launch confetti effect
+          const isMobileView = window.innerWidth < 768;
           const cardRect = scratchCardImage.getBoundingClientRect();
           const cardCenter = cardRect.top + cardRect.height/2;
-
+          
           confetti({
-            particleCount: 100,
-            spread: 90,
+            particleCount: isMobileView ? 100 : 150,
+            spread: isMobileView ? 80 : 130,
             origin: {
-               y: (scratchCardText.getBoundingClientRect().bottom + 60) / window.innerHeight,
+              y: (isMobileView ? (cardCenter - 50) : cardCenter) / window.innerHeight,
+              x: 0.5
             },
+            startVelocity: isMobileView ? 25 : 35,
+            gravity: 1.0,
+            colors: ['#ffffff', '#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff']
           });
           
-          // Change the message
+          // Update UI
           scratchCardDescription.innerHTML = "";
           
-          // Get amount using the compact data format
           const amount = cardData.a || cardData.amount;
           scratchCardText.innerHTML = `${amount} Pepecoin Gift!`;
           scratchCardText.style.fontWeight = 'bold';
           scratchCardText.style.color = '#228b45';
           scratchCardText.style.fontSize = '24px';
           
-          // Add animation to gift card
           scratchCardImage.classList.add('animate');
           document.getElementById('amount-container').classList.add('animate');
-          
-          // Show claim instructions
           document.getElementById('claim-instructions').style.display = 'block';
           
           // Remove cover after animation
@@ -1000,7 +1015,121 @@
             scratchCardCoverContainer.classList.add('hidden');
           }, { once: true });
         }
-      };
+      }
+      
+      // FIXED VERSION: Touch Event Handlers - simpler implementation
+      canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        debugLog('Touch start');
+        
+        const pos = getPosition(e);
+        positionX = pos.x;
+        positionY = pos.y;
+        
+        scratchCardCover.classList.remove('shine');
+        
+        // Draw initial circle
+        context.fillStyle = '#000';
+        context.beginPath();
+        context.arc(positionX, positionY, 18, 0, Math.PI * 2);
+        context.fill();
+        
+        clearTimeout(clearDetectionTimeout);
+      }, { passive: false });
+      
+      canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const pos = getPosition(e);
+        const x = pos.x;
+        const y = pos.y;
+        
+        // Only draw if position has changed
+        if (x !== positionX || y !== positionY) {
+          plotLine(positionX, positionY, x, y);
+          positionX = x;
+          positionY = y;
+          
+          if (isSafari) {
+            clearTimeout(setImageTimeout);
+            setImageTimeout = setTimeout(() => {
+              setImageFromCanvas();
+            }, 5);
+          }
+        }
+      }, { passive: false });
+      
+      canvas.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        debugLog('Touch end - checking scratch percentage');
+        
+        clearDetectionTimeout = setTimeout(() => {
+          checkBlackFillPercentage();
+        }, 500);
+      }, { passive: false });
+      
+      // For desktop (pointer events)
+      let setImageTimeout = null;
+      
+      canvas.addEventListener('pointerdown', function(e) {
+        // Skip if this is a touch event on mobile (let touchstart handle it)
+        if (isMobile && e.pointerType === 'touch') return;
+        
+        e.preventDefault();
+        
+        const pos = getPosition(e);
+        positionX = pos.x;
+        positionY = pos.y;
+        
+        scratchCardCover.classList.remove('shine');
+        
+        // Draw initial circle
+        context.fillStyle = '#000';
+        context.beginPath();
+        context.arc(positionX, positionY, 18, 0, Math.PI * 2);
+        context.fill();
+        
+        clearTimeout(clearDetectionTimeout);
+        
+        // Set up other event handlers
+        canvas.setPointerCapture(e.pointerId);
+        canvas.addEventListener('pointermove', handlePointerMove);
+        
+        window.addEventListener('pointerup', function handler(e) {
+          canvas.removeEventListener('pointermove', handlePointerMove);
+          canvas.releasePointerCapture(e.pointerId);
+          
+          clearDetectionTimeout = setTimeout(() => {
+            checkBlackFillPercentage();
+          }, 500);
+          
+          window.removeEventListener('pointerup', handler);
+        });
+      });
+      
+      function handlePointerMove(e) {
+        e.preventDefault();
+        
+        const pos = getPosition(e);
+        const x = pos.x;
+        const y = pos.y;
+        
+        plotLine(positionX, positionY, x, y);
+        positionX = x;
+        positionY = y;
+        
+        if (isSafari) {
+          clearTimeout(setImageTimeout);
+          setImageTimeout = setTimeout(() => {
+            setImageFromCanvas();
+          }, 5);
+        }
+      }
     }
   </script>
 </body>

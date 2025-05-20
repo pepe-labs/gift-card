@@ -483,20 +483,6 @@
       }
     }
 
-    /* Debug display */
-    #debug-info {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      max-width: 200px;
-      z-index: 1000;
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -585,9 +571,6 @@
     </ol>
   </div>
 
-  <!-- Debug info display (can be removed in production) -->
-  <div id="debug-info"></div>
-
   <!-- SVG Filters (exactly from original) -->
   <svg width="0" height="0">
     <filter id="remove-black" color-interpolation-filters="sRGB">
@@ -607,16 +590,6 @@
   </svg>
 
   <script>
-    // Debug helper function
-    function debugLog(message) {
-      console.log(message);
-      const debugElement = document.getElementById('debug-info');
-      debugElement.style.display = 'block';
-      debugElement.textContent = message;
-      setTimeout(() => {
-        debugElement.style.display = 'none';
-      }, 3000);
-    }
     
     // Prevent scrolling when touching the scratch card
     document.addEventListener('touchmove', function(e) {

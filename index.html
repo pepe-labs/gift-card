@@ -812,8 +812,6 @@
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      debugLog(`Device: ${isMobile ? 'Mobile' : 'Desktop'}, Safari: ${isSafari}, iOS: ${isIOS}`);
-      
       // Get DOM elements
       const scratchCardCover = document.querySelector('.scratch-card-cover');
       const scratchCardCanvasRender = document.querySelector('.scratch-card-canvas-render');
@@ -842,8 +840,6 @@
         context.beginPath();
         context.arc(canvas.width/2, canvas.height/2, 2, 0, Math.PI * 2);
         context.fill();
-        
-        debugLog(`Canvas size: ${canvas.width}x${canvas.height}`);
       }
       
       // Initialize canvas
@@ -948,8 +944,6 @@
         const totalPixels = canvas.width * canvas.height / (devicePixelRatio * devicePixelRatio);
         const blackFillPercentage = blackPixelCount * 100 / totalPixels;
         
-        debugLog(`Scratch: ${blackFillPercentage.toFixed(2)}%`);
-        
         if (blackFillPercentage >= 35) {
           scratchCardCoverContainer.classList.add('clear');
           
@@ -995,8 +989,6 @@
         e.preventDefault();
         e.stopPropagation();
         
-        debugLog('Touch start');
-        
         const pos = getPosition(e);
         positionX = pos.x;
         positionY = pos.y;
@@ -1038,8 +1030,6 @@
       canvas.addEventListener('touchend', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        
-        debugLog('Touch end - checking scratch percentage');
         
         clearDetectionTimeout = setTimeout(() => {
           checkBlackFillPercentage();

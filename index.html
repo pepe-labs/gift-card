@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scratch Card Gift</title>
+  <!-- Prevent touchmove on document -->
+  <script>
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.classList.contains('scratch-card-canvas')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
     /* Basic styling */
@@ -177,6 +185,9 @@
       margin: 0 auto;
       box-sizing: border-box;
       overflow: hidden;
+      /* Prevent touch action */
+      touch-action: none;
+      -webkit-overflow-scrolling: none;
     }
 
     .scratch-card-cover-container {
@@ -191,6 +202,8 @@
       transition: opacity .4s;
       -webkit-transform: translate3d(0, 0, 0);
       transform: translate3d(0, 0, 0);
+      /* Prevent touch action */
+      touch-action: none;
     }
 
     .scratch-card-cover-container.clear {
@@ -578,6 +591,13 @@
   </svg>
 
   <script>
+    // Prevent scrolling when touching the scratch card
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.classList.contains('scratch-card-canvas')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
     // Encryption functions with XOR - hides the amount in the URL
     function encryptData(data, key = "pepegift") {
       const jsonStr = JSON.stringify(data);
@@ -842,8 +862,53 @@
         console.log('Touch moving');
       });
       
+      // Add direct touch event handlers (more reliable on mobile)
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+      
+      function handleTouchStart(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const touch = e.touches[0];
+        scratchCardCover.classList.remove('shine');
+        ({ x: positionX, y: positionY } = getPosition(touch));
+        clearTimeout(clearDetectionTimeout);
+      }
+      
+      function handleTouchMove(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const touch = e.touches[0];
+        const { x, y } = getPosition(touch);
+        plotLine(positionX, positionY, x, y);
+        positionX = x;
+        positionY = y;
+        
+        if (isSafari) {
+          clearTimeout(setImageTimeout);
+          setImageTimeout = setTimeout(() => {
+            setImageFromCanvas();
+          }, 5);
+        }
+      }
+      
+      function handleTouchEnd(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        clearDetectionTimeout = setTimeout(() => {
+          checkBlackFillPercentage();
+        }, 500);
+      }
+      
+      // Keep pointer events for desktop
       canvas.addEventListener('pointerdown', (e) => {
-        // Prevent default to stop scrolling/zooming
+        // Only use pointer events for non-touch devices
+        if (e.pointerType === 'touch') return;
+        
         e.preventDefault();
         
         scratchCardCover.classList.remove('shine');

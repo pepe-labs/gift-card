@@ -4,15 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scratch Card Gift</title>
-  <!-- Prevent touchmove on document level -->
-  <script>
-    document.addEventListener('touchmove', function(e) {
-      // Prevent scrolling when touching anywhere within the scratch card
-      if (e.target.closest('.scratch-card')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
     /* Basic styling */

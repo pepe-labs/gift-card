@@ -907,6 +907,7 @@
         
         // WORKING APPROACH: Use pointer events for all devices (from working example)
         canvas.addEventListener('pointerdown', (e) => {
+          e.preventDefault(); 
           console.log('Pointer down detected');
           scratchCardCover.classList.remove('shine');
           ({ x: positionX, y: positionY } = getPosition(e));

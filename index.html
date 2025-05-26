@@ -540,7 +540,7 @@
         <div class="amount-container" id="amount-container">
           <div class="amount-overlay" id="amount-overlay">
             <div class="currency-symbol">
-              <img src="pblack-straight.png" alt="P">
+              <span style="font-size: 18px; font-weight: bold;">P</span>
             </div>
             <div class="amount-value" id="amount-value">500</div>
           </div>
@@ -805,12 +805,13 @@
       }
     }
 
-    // Fixed scratch card functionality for mobile
+    // FIXED scratch card functionality using the working mobile approach
     function initScratchCard(cardData) {
       // Device detection
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      console.log('Initializing scratch card...', { isSafari, isMobile, userAgent: navigator.userAgent });
       
       // Get DOM elements
       const scratchCardCover = document.querySelector('.scratch-card-cover');
@@ -826,81 +827,172 @@
       let positionX, positionY;
       let clearDetectionTimeout = null;
       let previousUrl;
+      let setImageTimeout = null;
       
-      // Get device pixel ratio and set up canvas
-      const devicePixelRatio = window.devicePixelRatio || 1;
-      function resizeCanvas() {
+      // ROBUST canvas initialization - ensure proper sizing on all devices
+      function initializeCanvas() {
+        const devicePixelRatio = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * devicePixelRatio;
-        canvas.height = rect.height * devicePixelRatio;
+        
+        // Ensure we have actual dimensions before proceeding
+        if (rect.width === 0 || rect.height === 0) {
+          // Canvas not properly laid out yet, try again after a short delay
+          setTimeout(initializeCanvas, 50);
+          return;
+        }
+        
+        const canvasWidth = rect.width * devicePixelRatio;
+        const canvasHeight = rect.height * devicePixelRatio;
+        
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         context.scale(devicePixelRatio, devicePixelRatio);
+        
+        console.log('Canvas initialized:', { 
+          displaySize: `${rect.width}x${rect.height}`, 
+          actualSize: `${canvasWidth}x${canvasHeight}`,
+          pixelRatio: devicePixelRatio 
+        });
+        
+        // Only attach event listeners after successful canvas initialization
+        attachEventListeners();
       }
       
-      // Initialize canvas
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-      
-      // Apply iOS-specific fixes
-      if (isIOS) {
-        document.querySelector('.scratch-card-image').style.zIndex = '0';
-        document.querySelector('.scratch-card-cover-container').style.zIndex = '3';
-        document.querySelector('.scratch-card-canvas').style.zIndex = '4';
+      // Separate function for attaching event listeners
+      function attachEventListeners() {
+        console.log('Attaching event listeners...', { isMobile, canvas: !!canvas });
+        
+        // Add fallback touch events for mobile if pointer events don't work
+        if (isMobile) {
+          console.log('Adding mobile-specific touch events...');
+          
+          canvas.addEventListener('touchstart', (e) => {
+            console.log('Touch start detected');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            scratchCardCover.classList.remove('shine');
+            const touch = e.touches[0];
+            ({ x: positionX, y: positionY } = getPosition(touch));
+            clearTimeout(clearDetectionTimeout);
+            
+            // Draw initial circle
+            context.fillStyle = '#000';
+            context.beginPath();
+            context.arc(positionX, positionY, 16, 0, Math.PI * 2);
+            context.fill();
+            
+            canvas.addEventListener('touchmove', plotTouch);
+            canvas.addEventListener('touchend', endTouch, { once: true });
+          }, { passive: false });
+          
+          const plotTouch = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const touch = e.touches[0];
+            const { x, y } = getPosition(touch);
+            context.fillStyle = '#000';
+            plotLine(context, positionX, positionY, x, y);
+            positionX = x;
+            positionY = y;
+            if (isSafari) {
+              clearTimeout(setImageTimeout);
+              setImageTimeout = setTimeout(() => {
+                setImageFromCanvas();
+              }, 5);
+            }
+          };
+          
+          const endTouch = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            canvas.removeEventListener('touchmove', plotTouch);
+            clearDetectionTimeout = setTimeout(() => {
+              checkBlackFillPercentage();
+            }, 500);
+          };
+        } else {
+          console.log('Adding desktop pointer events...');
+        }
+        
+        // WORKING APPROACH: Use pointer events for all devices (from working example)
+        canvas.addEventListener('pointerdown', (e) => {
+          console.log('Pointer down detected');
+          scratchCardCover.classList.remove('shine');
+          ({ x: positionX, y: positionY } = getPosition(e));
+          clearTimeout(clearDetectionTimeout);
+          
+          // Draw initial circle
+          context.fillStyle = '#000';
+          context.beginPath();
+          context.arc(positionX, positionY, 16, 0, Math.PI * 2);
+          context.fill();
+          
+          canvas.addEventListener('pointermove', plot);
+          
+          window.addEventListener('pointerup', (e) => {
+            canvas.removeEventListener('pointermove', plot);
+            clearDetectionTimeout = setTimeout(() => {
+              checkBlackFillPercentage();
+            }, 500);
+          }, { once: true });
+        });
+        
+        // Plot function (from working example)
+        const plot = (e) => {
+          const { x, y } = getPosition(e);
+          context.fillStyle = '#000';
+          plotLine(context, positionX, positionY, x, y);
+          positionX = x;
+          positionY = y;
+          if (isSafari) {
+            clearTimeout(setImageTimeout);
+            setImageTimeout = setTimeout(() => {
+              setImageFromCanvas();
+            }, 5);
+          }
+        };
       }
+      
+      // Initialize canvas with retry logic
+      initializeCanvas();
       
       // Safari-specific handling
       if (isSafari) {
         canvas.classList.add('hidden');
       }
       
-      // FIXED VERSION: Helper function to get position relative to canvas
+      // WORKING APPROACH: Simple position calculation in display pixels
       function getPosition(event) {
-        const rect = canvas.getBoundingClientRect();
-        // For touch events, use clientX/clientY directly
-        const clientX = event.clientX || event.touches[0].clientX;
-        const clientY = event.clientY || event.touches[0].clientY;
-        
+        const { left, top } = canvas.getBoundingClientRect();
         return {
-          x: clientX - rect.left,
-          y: clientY - rect.top
+          x: event.clientX - left,
+          y: event.clientY - top,
         };
       }
       
-      // FIXED VERSION: Draw a line of circles between two points
-      function plotLine(x1, y1, x2, y2) {
-        // CRITICAL FIX: Ensure fill style is set to black
-        context.fillStyle = '#000';
-        
-        const diffX = Math.abs(x2 - x1);
-        const diffY = Math.abs(y2 - y1);
-        const dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        const step = dist / 30; // More points for smoother scratching
-        
-        let i = 0;
-        let t, x, y;
-        
+      // Draw a line of circles between two points (adapted from working example)
+      function plotLine(context, x1, y1, x2, y2) {
+        var diffX = Math.abs(x2 - x1);
+        var diffY = Math.abs(y2 - y1);
+        var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        var step = dist / 50;
+        var i = 0;
+        var t;
+        var x;
+        var y;
         while (i < dist) {
           t = Math.min(1, i / dist);
           x = x1 + (x2 - x1) * t;
           y = y1 + (y2 - y1) * t;
-          
           context.beginPath();
-          context.arc(x, y, 18, 0, Math.PI * 2);
+          context.arc(x, y, 16, 0, Math.PI * 2);
           context.fill();
-          
           i += step;
         }
-        
-        // Draw a line as well for better coverage
-        context.lineWidth = 18;
-        context.lineCap = 'round';
-        context.strokeStyle = '#000';
-        context.beginPath();
-        context.moveTo(x1, y1);
-        context.lineTo(x2, y2);
-        context.stroke();
       }
       
-      // FIXED VERSION: Safari image rendering
+      // Safari image rendering
       function setImageFromCanvas() {
         canvas.toBlob((blob) => {
           const url = URL.createObjectURL(blob);
@@ -917,9 +1009,11 @@
         });
       }
       
-      // Check if enough of the card has been scratched
+      // Check if enough of the card has been scratched (use actual canvas dimensions)
       function checkBlackFillPercentage() {
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const actualWidth = canvas.width;
+        const actualHeight = canvas.height;
+        const imageData = context.getImageData(0, 0, actualWidth, actualHeight);
         const pixelData = imageData.data;
         let blackPixelCount = 0;
         
@@ -928,17 +1022,16 @@
           const green = pixelData[i + 1];
           const blue = pixelData[i + 2];
           const alpha = pixelData[i + 3];
-          
-          // More lenient detection for "black" pixels
-          if (red < 50 && green < 50 && blue < 50 && alpha > 200) {
+          if (red === 0 && green === 0 && blue === 0 && alpha === 255) {
             blackPixelCount++;
           }
         }
         
-        const totalPixels = canvas.width * canvas.height / (devicePixelRatio * devicePixelRatio);
-        const blackFillPercentage = blackPixelCount * 100 / totalPixels;
+        const blackFillPercentage = blackPixelCount * 100 / (actualWidth * actualHeight);
         
-        if (blackFillPercentage >= 35) {
+        console.log('Scratch check:', { blackFillPercentage, actualWidth, actualHeight });
+        
+        if (blackFillPercentage >= 45) {
           scratchCardCoverContainer.classList.add('clear');
           
           // Launch confetti effect
@@ -977,116 +1070,7 @@
           }, { once: true });
         }
       }
-      
-      // FIXED VERSION: Touch Event Handlers - simpler implementation
-      canvas.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const pos = getPosition(e);
-        positionX = pos.x;
-        positionY = pos.y;
-        
-        scratchCardCover.classList.remove('shine');
-        
-        // Draw initial circle
-        context.fillStyle = '#000';
-        context.beginPath();
-        context.arc(positionX, positionY, 18, 0, Math.PI * 2);
-        context.fill();
-        
-        clearTimeout(clearDetectionTimeout);
-      }, { passive: false });
-      
-      canvas.addEventListener('touchmove', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const pos = getPosition(e);
-        const x = pos.x;
-        const y = pos.y;
-        
-        // Only draw if position has changed
-        if (x !== positionX || y !== positionY) {
-          plotLine(positionX, positionY, x, y);
-          positionX = x;
-          positionY = y;
-          
-          if (isSafari) {
-            clearTimeout(setImageTimeout);
-            setImageTimeout = setTimeout(() => {
-              setImageFromCanvas();
-            }, 5);
-          }
-        }
-      }, { passive: false });
-      
-      canvas.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        clearDetectionTimeout = setTimeout(() => {
-          checkBlackFillPercentage();
-        }, 500);
-      }, { passive: false });
-      
-      // For desktop (pointer events)
-      let setImageTimeout = null;
-      
-      canvas.addEventListener('pointerdown', function(e) {
-        // Skip if this is a touch event on mobile (let touchstart handle it)
-        if (isMobile && e.pointerType === 'touch') return;
-        
-        e.preventDefault();
-        
-        const pos = getPosition(e);
-        positionX = pos.x;
-        positionY = pos.y;
-        
-        scratchCardCover.classList.remove('shine');
-        
-        // Draw initial circle
-        context.fillStyle = '#000';
-        context.beginPath();
-        context.arc(positionX, positionY, 18, 0, Math.PI * 2);
-        context.fill();
-        
-        clearTimeout(clearDetectionTimeout);
-        
-        // Set up other event handlers
-        canvas.setPointerCapture(e.pointerId);
-        canvas.addEventListener('pointermove', handlePointerMove);
-        
-        window.addEventListener('pointerup', function handler(e) {
-          canvas.removeEventListener('pointermove', handlePointerMove);
-          canvas.releasePointerCapture(e.pointerId);
-          
-          clearDetectionTimeout = setTimeout(() => {
-            checkBlackFillPercentage();
-          }, 500);
-          
-          window.removeEventListener('pointerup', handler);
-        });
-      });
-      
-      function handlePointerMove(e) {
-        e.preventDefault();
-        
-        const pos = getPosition(e);
-        const x = pos.x;
-        const y = pos.y;
-        
-        plotLine(positionX, positionY, x, y);
-        positionX = x;
-        positionY = y;
-        
-        if (isSafari) {
-          clearTimeout(setImageTimeout);
-          setImageTimeout = setTimeout(() => {
-            setImageFromCanvas();
-          }, 5);
-        }
-      }
+
     }
   </script>
 </body>

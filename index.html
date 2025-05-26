@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scratch Card Gift</title>
+  <!-- Global touchmove listener REMOVED/COMMENTED OUT -->
+  <!--
+  <script>
+    document.addEventListener('touchmove', function(e) {
+      // Prevent scrolling when touching anywhere within the scratch card
+      if (e.target.closest('.scratch-card')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
+  -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
     /* Basic styling */
@@ -167,23 +178,28 @@
       position: relative;
       border: 4px solid #c7c6cf;
       border-radius: 8px;
-      padding: 12px;
+      padding: 12px; /* This padding affects canvas offset. Ensure JS calculations are relative to canvas itself. */
       width: 320px;
       height: 320px;
       background-color: #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       margin: 0 auto;
-      overflow: hidden;
+      overflow: hidden; /* Important to clip canvas content */
     }
 
     .scratch-card-cover-container {
       position: absolute;
       z-index: 1;
-      top: 0;
-      left: 0;
-      border-radius: 4px;
-      width: 100%;
-      height: 100%;
+      /* These should match the canvas dimensions exactly if canvas is direct child */
+      /* Given padding on .scratch-card, canvas inside .scratch-card will be smaller than 320x320. */
+      /* The canvas itself is set to width/height 100% of its parent. */
+      /* The .scratch-card-cover-container should cover the canvas, not the padded .scratch-card area */
+      top: 12px; /* Offset by parent padding */
+      left: 12px; /* Offset by parent padding */
+      width: calc(100% - 24px); /* Adjust for parent padding */
+      height: calc(100% - 24px); /* Adjust for parent padding */
+
+      border-radius: 4px; /* This refers to the container itself, not the canvas overlay */
       filter: url('#remove-black');
       transition: opacity .4s;
       -webkit-transform: translate3d(0, 0, 0);
@@ -203,10 +219,10 @@
       z-index: 2;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100%; /* 100% of .scratch-card-cover-container (after padding adjustment) */
+      height: 100%;/* 100% of .scratch-card-cover-container (after padding adjustment) */
       cursor: grab;
-      touch-action: none;
+      touch-action: none; /* CRITICAL FOR MOBILE */
       -webkit-transform: translate3d(0, 0, 0);
       transform: translate3d(0, 0, 0);
     }
@@ -224,8 +240,8 @@
       z-index: 1;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100%; /* Matches canvas */
+      height: 100%;/* Matches canvas */
       background-color: transparent;
       transition: background-color .2s;
     }
@@ -234,15 +250,15 @@
       display: none;
     }
 
-    .scratch-card-cover {
+    .scratch-card-cover { /* This is the visual cover, under the canvas for drawing */
       display: flex;
       justify-content: center;
       align-items: center;
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100%; /* 100% of .scratch-card-cover-container */
+      height: 100%;/* 100% of .scratch-card-cover-container */
       background-color: #cfced6;
       background-image: linear-gradient(to right, #cfced6, #e0dfe6, #efeef3, #e0dfe6, #cfced6);
       overflow: hidden;
@@ -292,16 +308,16 @@
       opacity: .1;
     }
 
-    .scratch-card-image {
+    .scratch-card-image { /* The image revealed underneath */
       border-radius: 4px;
-      width: 100%;
-      height: 100%;
+      width: 100%; /* 100% of .scratch-card (the padded container) */
+      height: 100%;/* 100% of .scratch-card (the padded container) */
       object-fit: contain;
       filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.16));
       user-select: none;
       will-change: transform;
       position: relative;
-      z-index: 0;
+      z-index: 0; /* Ensure it's behind the cover container */
     }
 
     .scratch-card-image.animate {
@@ -395,7 +411,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -120%);
-      z-index: 1;
+      z-index: 1; /* Should be above the base image but below the scratch cover container */
       will-change: transform;
       backface-visibility: hidden;
       -webkit-font-smoothing: subpixel-antialiased;
@@ -447,7 +463,11 @@
       }
       
       .scratch-card {
-        max-width: 280px;
+        /* Max width for the overall scratch card area, padding is inside this */
+        /* Example: if width is 280px, canvas area will be 280 - 2*12 = 256px */
+        width: 280px; 
+        height: 280px;
+        /* max-width: 280px; // Or use max-width if you prefer */
       }
       
       .card-wrapper {
@@ -515,9 +535,10 @@
       </div>
 
       <div class="scratch-card">
+        <!-- Image revealed underneath -->
         <img class="scratch-card-image" id="card-image" src="fren-gift-card.png" alt="Gift card">
         
-        <!-- Amount overlay -->
+        <!-- Amount overlay, sits on top of the card-image but below scratch-card-cover-container -->
         <div class="amount-container" id="amount-container">
           <div class="amount-overlay" id="amount-overlay">
             <div class="currency-symbol">
@@ -527,8 +548,9 @@
           </div>
         </div>
 
+        <!-- This container holds the canvas and the visual scratch surface -->
         <div class="scratch-card-cover-container">
-          <canvas class="scratch-card-canvas" width="320" height="320"></canvas>
+          <canvas class="scratch-card-canvas"></canvas> <!-- Removed fixed width/height attributes, will be set by JS via CSS offsetWidth/Height -->
           <!-- only needed for Safari and iOS browsers -->
           <img class="scratch-card-canvas-render hidden" alt="">
           <div class="scratch-card-cover shine">
@@ -570,7 +592,10 @@
     </filter>
   </svg>
 
-  <script> 
+  <script>
+    // --- Start of integrated JavaScript ---
+
+    // Encryption/Decryption and URL parameter functions (from your original full app)
     function encryptData(data, key = "pepegift") {
       const jsonStr = JSON.stringify(data);
       let encrypted = '';
@@ -578,14 +603,11 @@
         const charCode = jsonStr.charCodeAt(i) ^ key.charCodeAt(i % key.length);
         encrypted += String.fromCharCode(charCode);
       }
-      // Base64 encode to make it URL-safe
       return btoa(encodeURIComponent(encrypted));
     }
 
-    // Decryption function
     function decryptData(encrypted, key = "pepegift") {
       try {
-        // Base64 decode
         const encryptedStr = decodeURIComponent(atob(encrypted));
         let decrypted = '';
         for (let i = 0; i < encryptedStr.length; i++) {
@@ -599,142 +621,102 @@
       }
     }
 
-    // Legacy compatibility functions
-    function encodeData(data) {
-      return btoa(encodeURIComponent(JSON.stringify(data)));
-    }
-
-    function decodeData(encoded) {
-      try {
-        return JSON.parse(decodeURIComponent(atob(encoded)));
-      } catch (e) {
-        console.error('Error decoding data', e);
-        return null;
-      }
-    }
-
-    // Utility functions
-    function generateUniqueId() {
-      return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
-    }
+    function encodeData(data) { return btoa(encodeURIComponent(JSON.stringify(data))); }
+    function decodeData(encoded) { try { return JSON.parse(decodeURIComponent(atob(encoded))); } catch (e) { console.error('Error decoding data', e); return null; } }
+    function generateUniqueId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
 
     function getUrlParams() {
       const urlParams = new URLSearchParams(window.location.search);
-      
-      // First check for new encrypted format ('c' parameter)
       const code = urlParams.get('c');
-      if (code) {
-        return decryptData(code);
-      }
-      
-      // Then check old format for backward compatibility
+      if (code) return decryptData(code);
       const data = urlParams.get('data');
-      if (data) {
-        return decodeData(data);
-      }
-      
+      if (data) return decodeData(data);
       return null;
     }
 
     function createShareableUrl(params) {
-      // Compact the data for smaller URLs
-      const compactData = {
-        n: params.name,
-        a: params.amount,
-        m: params.message,
-        e: params.email
-      };
-      
+      const compactData = { n: params.name, a: params.amount, m: params.message, e: params.email };
       const baseUrl = window.location.href.split('?')[0];
-      const encrypted = encryptData(compactData);
-      return `${baseUrl}?c=${encrypted}`; // 'c' for 'code' - shorter and obscures purpose
+      return `${baseUrl}?c=${encryptData(compactData)}`;
     }
 
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text)
-        .then(() => {
-          console.log('Text copied to clipboard');
-        })
-        .catch((err) => {
-          console.error('Could not copy text: ', err);
-        });
+        .then(() => console.log('Text copied to clipboard'))
+        .catch((err) => console.error('Could not copy text: ', err));
     }
 
-    // Check if we should show the card or the creator
+    // App logic to show creator or card (from your original full app)
     document.addEventListener('DOMContentLoaded', function() {
-      const cardData = getUrlParams();
-      
-      if (cardData) {
-        // We have a card to display
-        showCard(cardData);
+      console.log("App DOMContentLoaded: Initializing App Logic");
+      const cardDataFromUrl = getUrlParams(); // Renamed to avoid conflict
+      if (cardDataFromUrl) {
+        showCard(cardDataFromUrl);
       } else {
-        // Show the creator
         showCreator();
       }
-      
-      // Set up event listeners
-      setupEventListeners();
+      setupFormEventListeners(); // Renamed to avoid conflict
     });
 
     function showCard(cardData) {
+      console.log("App showCard called with data:", cardData);
       document.getElementById('card-creator').classList.add('hidden');
       document.getElementById('card-display').classList.remove('hidden');
-      
       if (!cardData) {
-        // Invalid data, show an error or redirect to creator
         window.location.href = window.location.pathname;
         return;
       }
-      
-      // Update card with data
       updateCardWithData(cardData);
-      
-      // Initialize the scratch card
-      initScratchCard(cardData);
+      // initScratchCard is now called within the scratch card specific JS below, after its DOM is ready
     }
 
     function showCreator() {
+      console.log("App showCreator called");
       document.getElementById('card-creator').classList.remove('hidden');
       document.getElementById('card-display').classList.add('hidden');
     }
 
     function updateCardWithData(cardData) {
-      // Handle compact data format (n, a, m, e)
+      console.log("App updateCardWithData called with data:", cardData);
       const name = cardData.n || cardData.name;
       const amount = cardData.a || cardData.amount;
       const message = cardData.m || cardData.message;
       const email = cardData.e || cardData.email;
-      
-      // Set the sender name
-      if (name) {
-        document.getElementById('sender-display').textContent = name;
+
+      const senderDisplay = document.getElementById('sender-display');
+      const giftFromEl = document.querySelector('.gift-from');
+      if (name && senderDisplay && giftFromEl) {
+        senderDisplay.textContent = name;
+        giftFromEl.classList.remove('hidden');
+        senderDisplay.classList.remove('hidden');
       } else {
-        document.querySelector('.gift-from').classList.add('hidden');
-        document.getElementById('sender-display').classList.add('hidden');
+         if(giftFromEl) giftFromEl.classList.add('hidden');
+         if(senderDisplay) senderDisplay.classList.add('hidden');
       }
       
-      // Set the amount value in the overlay
-      document.getElementById('amount-value').textContent = amount;
+      const amountValueEl = document.getElementById('amount-value');
+      if(amountValueEl && amount) amountValueEl.textContent = amount;
       
-      // Set the message - split emoji from text to keep emoji non-italic
-      if (message) {
-        const messageEl = document.getElementById('scratch-card-text');
+      const messageEl = document.getElementById('scratch-card-text');
+      if (messageEl && message) {
         if (message.includes('🎁')) {
           const parts = message.split('🎁');
-          messageEl.innerHTML = '🎁 <i>' + parts[1].trim() + '</i>';
+          messageEl.innerHTML = '🎁 <i>' + (parts[1] ? parts[1].trim() : '') + '</i>';
         } else {
           messageEl.innerHTML = '<i>' + message + '</i>';
         }
       }
       
-      // Set the contact email
-      if (email) {
-        document.getElementById('contact-email').textContent = email;
-      }
+      const contactEmailEl = document.getElementById('contact-email');
+      if (contactEmailEl && email) contactEmailEl.textContent = email;
+
+      // Crucially, now that card data is populated, initialize the scratch card.
+      // This ensures initScratchCard has access to cardData when it runs.
+      initScratchCardSpecific(cardData); // Call the renamed scratch card init
     }
 
-    function setupEventListeners() {
-      // Generate button
+    function setupFormEventListeners() { // Renamed
+      console.log("App setupFormEventListeners called");
       const generateButton = document.getElementById('generate-button');
       if (generateButton) {
         generateButton.addEventListener('click', function() {
@@ -745,275 +727,264 @@
             message: document.getElementById('message').value,
             email: document.getElementById('email').value
           };
-          
           const shareableUrl = createShareableUrl(cardData);
           document.getElementById('share-link').value = shareableUrl;
           document.getElementById('result').classList.remove('hidden');
         });
       }
-      
-      // Copy button
       const copyButton = document.getElementById('copy-button');
       if (copyButton) {
         copyButton.addEventListener('click', function() {
           const link = document.getElementById('share-link').value;
           copyToClipboard(link);
-          
-          // Visual feedback
           copyButton.textContent = 'Copied!';
-          setTimeout(() => {
-            copyButton.textContent = 'Copy';
-          }, 2000);
+          setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
         });
       }
-      
-      // Preview button
       const previewButton = document.getElementById('preview-button');
       if (previewButton) {
         previewButton.addEventListener('click', function() {
           const link = document.getElementById('share-link').value;
-          window.location.href = link;
+          window.open(link, '_blank'); // Open in new tab for preview
         });
       }
     }
 
-    // Simplified scratch card functionality - aligning with the working mobile approach
-    function initScratchCard(cardData) {
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    // --- End of your original app logic ---
 
-      console.log('Initializing scratch card (simplified event model)...', { isSafari, userAgent: navigator.userAgent });
+    // --- Start of Scratch Card Specific Logic (adapted from working example) ---
+    function initScratchCardSpecific(cardDataForScratch) { // Renamed and accepts cardData
+        console.log("SCRATCH: initScratchCardSpecific called with data:", cardDataForScratch);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-      const scratchCardCover = document.querySelector('.scratch-card-cover');
-      const scratchCardCanvasRender = document.querySelector('.scratch-card-canvas-render');
-      const scratchCardCoverContainer = document.querySelector('.scratch-card-cover-container');
-      const scratchCardText = document.getElementById('scratch-card-text');
-      const scratchCardImage = document.querySelector('.scratch-card-image');
-      const scratchCardDescription = document.querySelector('.scratch-instruction');
-      const canvas = document.querySelector('.scratch-card-canvas');
-      const context = canvas.getContext('2d');
+        // Selectors need to be specific if multiple canvases could exist,
+        // but here we assume they are inside #card-display which is shown/hidden.
+        const scratchCardElement = document.querySelector('#card-display .scratch-card');
+        if (!scratchCardElement) {
+            console.error("SCRATCH: .scratch-card element not found within #card-display.");
+            return;
+        }
 
-      let positionX, positionY;
-      let clearDetectionTimeout = null;
-      let previousUrl = null; // For Safari image rendering
-      let setImageTimeout = null; // For Safari image rendering
+        const scratchCardCover = scratchCardElement.querySelector('.scratch-card-cover');
+        const scratchCardCanvasRender = scratchCardElement.querySelector('.scratch-card-canvas-render');
+        const scratchCardCoverContainer = scratchCardElement.querySelector('.scratch-card-cover-container');
+        const canvas = scratchCardElement.querySelector('.scratch-card-canvas');
+        
+        // Elements for checkBlackFillPercentage (may be outside scratchCardElement)
+        const scratchCardText = document.getElementById('scratch-card-text'); 
+        const scratchCardImage = document.getElementById('card-image');
 
-      function initializeCanvas() {
+
+        if (!canvas || !scratchCardCover || !scratchCardCanvasRender || !scratchCardCoverContainer || !scratchCardText || !scratchCardImage) {
+            console.error("SCRATCH: One or more essential scratch card elements not found. Bailing out.",
+                {canvas, scratchCardCover, scratchCardCanvasRender, scratchCardCoverContainer, scratchCardText, scratchCardImage });
+            return;
+        }
+        
+        const context = canvas.getContext('2d');
+        let positionX, positionY;
+        let clearDetectionTimeout = null;
+        let previousUrl = null;
+        let setImageTimeout = null;
+
         const devicePixelRatio = window.devicePixelRatio || 1;
 
-        // Use offsetWidth/offsetHeight like the working example
-        const displayWidth = canvas.offsetWidth;
-        const displayHeight = canvas.offsetHeight;
-
-        if (displayWidth === 0 || displayHeight === 0) {
-          console.log('Canvas not ready (offsetWidth/Height is 0), retrying...', { displayWidth, displayHeight });
-          setTimeout(initializeCanvas, 50);
-          return;
-        }
-
-        canvas.width = displayWidth * devicePixelRatio;
-        canvas.height = displayHeight * devicePixelRatio;
-        context.scale(devicePixelRatio, devicePixelRatio);
-
-        console.log('Canvas initialized (using offsetWidth/Height):', {
-          displaySize: `${displayWidth}x${displayHeight}`,
-          actualSize: `${canvas.width}x${canvas.height}`,
-          pixelRatio: devicePixelRatio
-        });
-
-        if (isSafari) {
-          canvas.classList.add('hidden'); // Hide canvas, show img render for Safari
-        }
-
-        attachEventListeners();
-      }
-
-      function attachEventListeners() {
-        console.log('Attaching POINTER event listeners (relying on touch-action:none)...');
-
-        canvas.addEventListener('pointerdown', (e) => {
-          // NO e.preventDefault(); -- relying on CSS touch-action: none
-          // Optional: For more robust drag, especially if finger leaves canvas:
-          // try { canvas.setPointerCapture(e.pointerId); } catch(err) { console.warn("setPointerCapture failed:", err); }
-
-          console.log('Pointer down detected');
-          scratchCardCover.classList.remove('shine');
-          ({ x: positionX, y: positionY } = getPosition(e));
-          clearTimeout(clearDetectionTimeout);
-
-          // Draw initial circle
-          context.fillStyle = '#000';
-          context.beginPath();
-          context.arc(positionX, positionY, 16, 0, Math.PI * 2);
-          context.fill();
-          
-          // If Safari, update the rendered image for this first dot
-          if (isSafari) {
-            setImageFromCanvas();
-          }
-
-          canvas.addEventListener('pointermove', plot);
-
-          const onPointerUp = (upEvent) => {
-            // Ensure we are reacting to the same pointer that initiated the down event
-            if (upEvent.pointerId === e.pointerId) {
-              // Optional:
-              // try { canvas.releasePointerCapture(e.pointerId); } catch(err) { console.warn("releasePointerCapture failed:", err); }
-              
-              canvas.removeEventListener('pointermove', plot);
-              window.removeEventListener('pointerup', onPointerUp); // Clean up this specific listener
-
-              clearDetectionTimeout = setTimeout(() => {
-                checkBlackFillPercentage();
-              }, 500);
+        function setupCanvasSizingAndEvents() {
+            if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
+                console.warn("SCRATCH: Canvas not sized (offsetWidth/Height is 0), retrying setupCanvasSizingAndEvents...");
+                setTimeout(setupCanvasSizingAndEvents, 100);
+                return;
             }
-          };
-          window.addEventListener('pointerup', onPointerUp);
-        });
-        
-        const plot = (e) => {
-          // NO e.preventDefault(); -- relying on CSS touch-action: none
+            console.log(`SCRATCH: Canvas ready for sizing. OffsetW=${canvas.offsetWidth}, OffsetH=${canvas.offsetHeight}`);
 
-          // Only draw if the pointer is "down" (pressure for touch/pen, button for mouse)
-          if (e.pressure > 0 || (e.pointerType === 'mouse' && e.buttons === 1)) {
-            const { x, y } = getPosition(e);
-            context.fillStyle = '#000';
-            plotLine(context, positionX, positionY, x, y);
-            positionX = x;
-            positionY = y;
+            const canvasDisplayWidth = canvas.offsetWidth;
+            const canvasDisplayHeight = canvas.offsetHeight;
+
+            canvas.width = canvasDisplayWidth * devicePixelRatio;
+            canvas.height = canvasDisplayHeight * devicePixelRatio;
+            context.scale(devicePixelRatio, devicePixelRatio);
+            console.log(`SCRATCH: Canvas sized to ${canvas.width}x${canvas.height} (scaled by DPR ${devicePixelRatio})`);
+
+
             if (isSafari) {
-              clearTimeout(setImageTimeout);
-              setImageTimeout = setTimeout(() => {
+              canvas.classList.add('hidden');
+            }
+
+            canvas.addEventListener('pointerdown', (e) => {
+              console.log("SCRATCH: POINTERDOWN on canvas");
+              scratchCardCover.classList.remove('shine');
+              ({ x: positionX, y: positionY } = getPosition(e));
+              clearTimeout(clearDetectionTimeout);
+
+              context.fillStyle = '#000';
+              context.beginPath();
+              context.arc(positionX, positionY, 16, 0, Math.PI * 2);
+              context.fill();
+              console.log(`SCRATCH: Initial dot drawn at (${positionX.toFixed(1)}, ${positionY.toFixed(1)})`);
+
+              if (isSafari) {
                 setImageFromCanvas();
-              }, 5);
+              }
+              
+              canvas.addEventListener('pointermove', plot);
+              
+              // Use a named function for pointerup to remove it correctly
+              const onPointerUp = (upEvent) => {
+                // Only act if this is the same pointer
+                if (e.pointerId === upEvent.pointerId) {
+                    console.log("SCRATCH: POINTERUP (window)");
+                    canvas.removeEventListener('pointermove', plot);
+                    window.removeEventListener('pointerup', onPointerUp); // Remove this specific listener
+                    clearDetectionTimeout = setTimeout(() => {
+                      checkBlackFillPercentage();
+                    }, 500);
+                }
+              };
+              window.addEventListener('pointerup', onPointerUp);
+            });
+        }
+
+        const plot = (e) => {
+            // Only draw if the pointer is "active" (pressure for touch/pen, button for mouse)
+            if (e.pressure > 0 || (e.pointerType === 'mouse' && e.buttons === 1)) {
+                // console.log("SCRATCH: PLOT (POINTERMOVE on canvas)"); // Can be very noisy
+                const { x, y } = getPosition(e);
+                plotLine(context, positionX, positionY, x, y);
+                positionX = x;
+                positionY = y;
+                if (isSafari) {
+                    clearTimeout(setImageTimeout);
+                    setImageTimeout = setTimeout(() => {
+                    setImageFromCanvas();
+                    }, 5);
+                }
+            }
+        };
+
+        const checkBlackFillPercentage = () => {
+          console.log("SCRATCH: checkBlackFillPercentage called");
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const pixelData = imageData.data;
+          let blackPixelCount = 0;
+
+          for (let i = 0; i < pixelData.length; i += 4) {
+            if (pixelData[i] === 0 && pixelData[i + 1] === 0 && pixelData[i + 2] === 0 && pixelData[i + 3] === 255) {
+              blackPixelCount++;
             }
           }
-        };
-      }
 
-      initializeCanvas(); // Start the canvas setup
+          const totalPixels = canvas.width * canvas.height;
+          const blackFillPercentage = totalPixels > 0 ? (blackPixelCount * 100) / totalPixels : 0;
+         
+          console.log(`SCRATCH: Black fill percentage: ${blackFillPercentage.toFixed(2)}%`);
 
-      function getPosition(event) {
-        const { left, top } = canvas.getBoundingClientRect();
-        return {
-          x: event.clientX - left,
-          y: event.clientY - top,
-        };
-      }
+          if (blackFillPercentage >= 45) {
+            console.log("SCRATCH: Threshold reached! Revealing card.");
+            scratchCardCoverContainer.classList.add('clear');
+            
+            if (typeof confetti === 'function') {
+                const cardRect = scratchCardImage.getBoundingClientRect();
+                const cardCenterY = cardRect.top + cardRect.height / 2;
+                const isMobileView = window.innerWidth < 768;
+                confetti({
+                  particleCount: isMobileView ? 100 : 150,
+                  spread: isMobileView ? 80 : 130,
+                  origin: {
+                     y: (isMobileView ? (cardCenterY - 50) : cardCenterY) / window.innerHeight,
+                     x: 0.5
+                  },
+                  startVelocity: isMobileView ? 25 : 35,
+                  gravity: 1.0,
+                  colors: ['#ffffff', '#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff']
+                });
+            }
+            
+            const scratchInstruction = document.querySelector('#card-display .scratch-instruction');
+            if(scratchInstruction) scratchInstruction.innerHTML = ""; // Clear "scratch below" text
 
-      function plotLine(context, x1, y1, x2, y2) {
-        var diffX = Math.abs(x2 - x1);
-        var diffY = Math.abs(y2 - y1);
-        var dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        var step = dist / 30; // Adjusted step for potentially smoother/more frequent circles
-        var i = 0;
-        var t;
-        var x;
-        var y;
-        
-        // Ensure at least one point is drawn if dist is 0 or very small
-        if (dist === 0) {
+
+            // Use cardDataForScratch passed into this function
+            const amount = cardDataForScratch.a || cardDataForScratch.amount || 'The';
+            scratchCardText.innerHTML = `🎉 ${amount} Pepecoin Gift!`;
+            scratchCardText.style.fontWeight = 'bold';
+            scratchCardText.style.color = '#228b45';
+            scratchCardText.style.fontSize = '24px';
+            
+            scratchCardImage.classList.add('animate');
+
+            const amountContainer = document.getElementById('amount-container');
+            if(amountContainer) amountContainer.classList.add('animate');
+            
+            const claimInstructions = document.getElementById('claim-instructions');
+            if (claimInstructions) claimInstructions.style.display = 'block';
+            
+            scratchCardCoverContainer.addEventListener('transitionend', () => {
+              scratchCardCoverContainer.classList.add('hidden');
+            }, { once: true });
+          }
+        }
+
+        const getPosition = ({ clientX, clientY }) => {
+          const rect = canvas.getBoundingClientRect();
+          // console.log(`SCRATCH: getPosition - clientX:${clientX}, clientY:${clientY}, rectL:${rect.left}, rectT:${rect.top}`);
+          return {
+            x: clientX - rect.left,
+            y: clientY - rect.top,
+          };
+        }
+
+        const plotLine = (context, x1, y1, x2, y2) => {
+          // console.log(`SCRATCH: plotLine from (${x1.toFixed(1)},${y1.toFixed(1)}) to (${x2.toFixed(1)},${y2.toFixed(1)})`);
+          context.fillStyle = '#000';
+          var diffX = Math.abs(x2 - x1);
+          var diffY = Math.abs(y2 - y1);
+          var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+          var step = dist / 30; // Was 50 in example, 30 makes it denser
+          var i = 0;
+          var t, x, y;
+
+          if (dist === 0) {
             context.beginPath();
             context.arc(x1, y1, 16, 0, Math.PI * 2);
             context.fill();
             return;
+          }
+
+          while (i <= dist) { // Use <= for full line
+            t = i / dist;
+            x = x1 + (x2 - x1) * t;
+            y = y1 + (y2 - y1) * t;
+            context.beginPath();
+            context.arc(x, y, 16, 0, Math.PI * 2);
+            context.fill();
+            if (step === 0) break;
+            i += step;
+          }
         }
 
-        while (i <= dist) { // Use <= to ensure the end point is included
-          t = i / dist; // t will go from 0 to 1
-          x = x1 + (x2 - x1) * t;
-          y = y1 + (y2 - y1) * t;
-          context.beginPath();
-          context.arc(x, y, 16, 0, Math.PI * 2); // Radius 16
-          context.fill();
-          if (step === 0) break; // Avoid infinite loop if step somehow becomes 0
-          i += step;
-        }
-        // Optionally, ensure the final point is drawn exactly
-        context.beginPath();
-        context.arc(x2, y2, 16, 0, Math.PI * 2);
-        context.fill();
-      }
-
-      function setImageFromCanvas() {
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            console.error("Canvas toBlob returned null");
-            return; 
-          }
-          const url = URL.createObjectURL(blob);
-          
-          if (previousUrl) { 
-            URL.revokeObjectURL(previousUrl);
-          }
-          scratchCardCanvasRender.src = url;
-          previousUrl = url; 
-
-          if (scratchCardCanvasRender.classList.contains('hidden')) {
-            scratchCardCanvasRender.classList.remove('hidden');
-          }
-        });
-      }
-
-      function checkBlackFillPercentage() {
-        const actualWidth = canvas.width; 
-        const actualHeight = canvas.height;
-        const imageData = context.getImageData(0, 0, actualWidth, actualHeight);
-        const pixelData = imageData.data;
-        let blackPixelCount = 0;
-
-        for (let i = 0; i < pixelData.length; i += 4) {
-          if (pixelData[i] === 0 && pixelData[i + 1] === 0 && pixelData[i + 2] === 0 && pixelData[i + 3] === 255) {
-            blackPixelCount++;
-          }
+        const setImageFromCanvas = () => {
+          // console.log("SCRATCH: setImageFromCanvas called");
+          canvas.toBlob((blob) => {
+            if (!blob) { console.error("SCRATCH: canvas.toBlob returned null"); return; }
+            const url = URL.createObjectURL(blob);
+            if (previousUrl) {
+              URL.revokeObjectURL(previousUrl);
+            }
+            scratchCardCanvasRender.src = url;
+            previousUrl = url;
+            if (scratchCardCanvasRender.classList.contains('hidden')) {
+              scratchCardCanvasRender.classList.remove('hidden');
+            }
+          });
         }
         
-        // The number of pixels in imageData is actualWidth * actualHeight (already DPR scaled)
-        const totalPixelsInImageData = actualWidth * actualHeight;
-        const blackFillPercentage = (blackPixelCount * 100) / totalPixelsInImageData;
-
-        console.log('Scratch check:', { blackFillPercentage, actualWidth, actualHeight, blackPixelCount, totalPixelsInImageData });
-
-        if (blackFillPercentage >= 45) {
-          scratchCardCoverContainer.classList.add('clear');
-
-          const isMobileView = window.innerWidth < 768;
-          const cardRect = scratchCardImage.getBoundingClientRect();
-          const cardCenterY = cardRect.top + cardRect.height / 2;
-
-          if (typeof confetti === 'function') {
-            confetti({
-              particleCount: isMobileView ? 100 : 150,
-              spread: isMobileView ? 80 : 130,
-              origin: {
-                y: (isMobileView ? (cardCenterY - 50) : cardCenterY) / window.innerHeight,
-                x: 0.5
-              },
-              startVelocity: isMobileView ? 25 : 35,
-              gravity: 1.0,
-              colors: ['#ffffff', '#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff']
-            });
-          } else {
-            console.warn('Confetti function not found.');
-          }
-
-          scratchCardDescription.innerHTML = "";
-
-          const amount = cardData.a || cardData.amount;
-          scratchCardText.innerHTML = `${amount} Pepecoin Gift!`;
-          scratchCardText.style.fontWeight = 'bold';
-          scratchCardText.style.color = '#228b45';
-          scratchCardText.style.fontSize = '24px';
-
-          scratchCardImage.classList.add('animate');
-          document.getElementById('amount-container').classList.add('animate');
-          document.getElementById('claim-instructions').style.display = 'block';
-
-          scratchCardCoverContainer.addEventListener('transitionend', () => {
-            scratchCardCoverContainer.classList.add('hidden');
-          }, { once: true });
-        }
-      }
+        // Call the sizing and event attachment logic
+        // This needs to happen after the #card-display is visible and elements have dimensions.
+        // Since initScratchCardSpecific is called from updateCardWithData (when #card-display becomes visible),
+        // we can try to setup immediately, with retry.
+        setupCanvasSizingAndEvents();
     }
+    // --- End of Scratch Card Specific Logic ---
   </script>
 </body>
 </html>

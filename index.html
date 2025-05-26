@@ -834,12 +834,6 @@
         canvas.width = rect.width * devicePixelRatio;
         canvas.height = rect.height * devicePixelRatio;
         context.scale(devicePixelRatio, devicePixelRatio);
-        
-        // Draw a small dot to ensure context is initialized
-        context.fillStyle = '#000';
-        context.beginPath();
-        context.arc(canvas.width/2, canvas.height/2, 2, 0, Math.PI * 2);
-        context.fill();
       }
       
       // Initialize canvas

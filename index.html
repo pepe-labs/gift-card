@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scratch Card Gift</title>
-  <!-- Prevent touchmove on document -->
+  <!-- Prevent touchmove on document level -->
   <script>
     document.addEventListener('touchmove', function(e) {
-      if (e.target.classList.contains('scratch-card-canvas')) {
+      // Prevent scrolling when touching anywhere within the scratch card
+      if (e.target.closest('.scratch-card')) {
         e.preventDefault();
       }
     }, { passive: false });

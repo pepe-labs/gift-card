@@ -32,7 +32,7 @@
       display: none !important;
     }
 
-    /* Card Creator Form */
+    /* Card Creator Form Styles */
     .form-container {
       background-color: white;
       border-radius: 10px;
@@ -46,12 +46,6 @@
     h2 {
       margin-top: 0;
       margin-bottom: 20px;
-      color: #333;
-    }
-
-    h3 {
-      margin-top: 20px;
-      margin-bottom: 10px;
       color: #333;
     }
 
@@ -115,6 +109,7 @@
       margin-top: 0;
     }
 
+    /* Card Display Styles - EXACT FROM WORKING VERSION */
     .card-wrapper {
       display: flex;
       flex-direction: column;
@@ -499,7 +494,7 @@
     </div>
   </div>
 
-  <!-- Card Display (hidden initially) -->
+  <!-- Card Display - EXACT FROM WORKING VERSION -->
   <div id="card-display" class="hidden">
     <div class="card-wrapper">
       <div class="card-header">
@@ -510,7 +505,7 @@
 
       <div class="scratch-card">
         <!-- Image revealed underneath -->
-        <img class="scratch-card-image" id="card-image" src="fren-gift-card.png" alt="Gift card">
+        <img class="scratch-card-image" src="fren-gift-card.png" alt="Gift card">
         
         <!-- Amount overlay -->
         <div class="amount-container" id="amount-container">
@@ -533,7 +528,7 @@
         </div>
       </div>
 
-      <div class="scratch-card-text" id="scratch-card-text">🎁 <i>Scratch for a surprise!</i></div>
+      <div class="scratch-card-text">🎁 <i>Scratch for a surprise!</i></div>
       
     </div>
   </div>
@@ -567,7 +562,7 @@
   </svg>
 
   <script>
-    // Encryption/Decryption and URL parameter functions
+    // URL handling functions
     function encryptData(data, key = "pepegift") {
       const jsonStr = JSON.stringify(data);
       let encrypted = '';
@@ -588,21 +583,18 @@
         }
         return JSON.parse(decrypted);
       } catch (e) {
-        console.error('Error decrypting data', e);
         return null;
       }
     }
 
-    function encodeData(data) { return btoa(encodeURIComponent(JSON.stringify(data))); }
-    function decodeData(encoded) { try { return JSON.parse(decodeURIComponent(atob(encoded))); } catch (e) { console.error('Error decoding data', e); return null; } }
-    function generateUniqueId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
+    function generateUniqueId() { 
+      return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); 
+    }
 
     function getUrlParams() {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('c');
       if (code) return decryptData(code);
-      const data = urlParams.get('data');
-      if (data) return decodeData(data);
       return null;
     }
 
@@ -618,75 +610,37 @@
         .catch((err) => console.error('Could not copy text: ', err));
     }
 
-    // App logic to show creator or card
+    // App initialization
     document.addEventListener('DOMContentLoaded', function() {
-      const cardDataFromUrl = getUrlParams();
-      if (cardDataFromUrl) {
-        showCard(cardDataFromUrl);
-      } else {
-        showCreator();
-      }
-      setupFormEventListeners();
-    });
-
-    function showCard(cardData) {
-      document.getElementById('card-creator').classList.add('hidden');
-      document.getElementById('card-display').classList.remove('hidden');
-      if (!cardData) {
-        window.location.href = window.location.pathname;
-        return;
-      }
-      updateCardWithData(cardData);
-    }
-
-    function showCreator() {
-      document.getElementById('card-creator').classList.remove('hidden');
-      document.getElementById('card-display').classList.add('hidden');
-    }
-
-    function updateCardWithData(cardData) {
-      const name = cardData.n || cardData.name;
-      const amount = cardData.a || cardData.amount;
-      const message = cardData.m || cardData.message;
-      const email = cardData.e || cardData.email;
-
-      const senderDisplay = document.getElementById('sender-display');
-      const giftFromEl = document.querySelector('.gift-from');
-      if (name && senderDisplay && giftFromEl) {
-        senderDisplay.textContent = name;
-        giftFromEl.classList.remove('hidden');
-        senderDisplay.classList.remove('hidden');
-      } else {
-         if(giftFromEl) giftFromEl.classList.add('hidden');
-         if(senderDisplay) senderDisplay.classList.add('hidden');
-      }
-      
-      const amountValueEl = document.getElementById('amount-value');
-      if(amountValueEl && amount) amountValueEl.textContent = amount;
-      
-      const messageEl = document.getElementById('scratch-card-text');
-      if (messageEl && message) {
-        if (message.includes('🎁')) {
-          const parts = message.split('🎁');
-          messageEl.innerHTML = '🎁 <i>' + (parts[1] ? parts[1].trim() : '') + '</i>';
-        } else {
-          messageEl.innerHTML = '<i>' + message + '</i>';
+      const cardData = getUrlParams();
+      if (cardData) {
+        // Show card view
+        document.getElementById('card-creator').classList.add('hidden');
+        document.getElementById('card-display').classList.remove('hidden');
+        
+        // Update card data
+        if (cardData.n) document.getElementById('sender-display').textContent = cardData.n;
+        if (cardData.a) document.getElementById('amount-value').textContent = cardData.a;
+        if (cardData.m) {
+          const messageEl = document.querySelector('.scratch-card-text');
+          if (cardData.m.includes('🎁')) {
+            const parts = cardData.m.split('🎁');
+            messageEl.innerHTML = '🎁 <i>' + (parts[1] ? parts[1].trim() : '') + '</i>';
+          } else {
+            messageEl.innerHTML = '<i>' + cardData.m + '</i>';
+          }
         }
-      }
-      
-      const contactEmailEl = document.getElementById('contact-email');
-      if (contactEmailEl && email) contactEmailEl.textContent = email;
-
-      // Initialize scratch card after brief delay to ensure DOM is ready
-      setTimeout(() => {
+        if (cardData.e) document.getElementById('contact-email').textContent = cardData.e;
+        
+        // Initialize scratch card with exact working logic
         initScratchCard(cardData);
-      }, 100);
-    }
-
-    function setupFormEventListeners() {
-      const generateButton = document.getElementById('generate-button');
-      if (generateButton) {
-        generateButton.addEventListener('click', function() {
+      } else {
+        // Show creator form
+        document.getElementById('card-creator').classList.remove('hidden');
+        document.getElementById('card-display').classList.add('hidden');
+        
+        // Form event listeners
+        document.getElementById('generate-button').addEventListener('click', function() {
           const cardData = {
             id: generateUniqueId(),
             name: document.getElementById('sender-name').value,
@@ -698,26 +652,22 @@
           document.getElementById('share-link').value = shareableUrl;
           document.getElementById('result').classList.remove('hidden');
         });
-      }
-      const copyButton = document.getElementById('copy-button');
-      if (copyButton) {
-        copyButton.addEventListener('click', function() {
+        
+        document.getElementById('copy-button').addEventListener('click', function() {
           const link = document.getElementById('share-link').value;
           copyToClipboard(link);
-          copyButton.textContent = 'Copied!';
-          setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
+          this.textContent = 'Copied!';
+          setTimeout(() => { this.textContent = 'Copy'; }, 2000);
         });
-      }
-      const previewButton = document.getElementById('preview-button');
-      if (previewButton) {
-        previewButton.addEventListener('click', function() {
+        
+        document.getElementById('preview-button').addEventListener('click', function() {
           const link = document.getElementById('share-link').value;
           window.open(link, '_blank');
         });
       }
-    }
+    });
 
-    // Scratch Card Logic (from working viewer version)
+    // EXACT WORKING SCRATCH CARD LOGIC FROM VIEWER VERSION
     function initScratchCard(cardData) {
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const scratchCardCover = document.querySelector('.scratch-card-cover');
@@ -785,8 +735,7 @@
                       y: (scratchCardText.getBoundingClientRect().bottom + 60) / window.innerHeight,
                   },
               });
-              
-              const amount = cardData.a || cardData.amount || 'The';
+              const amount = cardData.a || cardData.amount || '500';
               scratchCardText.textContent = `🎉 You got ${amount} Pepecoin!`;
               scratchCardImage.classList.add('animate');
               amountContainer.classList.add('animate');

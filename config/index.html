@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Your Scratch Card Gift</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-image: radial-gradient(circle, #fff 60%, #cfcecb);
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #333;
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+
+    .header p {
+      color: #666;
+      margin: 0;
+      font-size: 18px;
+    }
+
+    /* Card Creator Form Styles */
+    .form-container {
+      background-color: white;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #228b45;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #196b35;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .link-box {
+      display: flex;
+      margin: 10px 0;
+    }
+
+    .link-box input {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px 0 0 5px;
+      font-size: 16px;
+    }
+
+    .link-box button {
+      border-radius: 0 5px 5px 0;
+      margin-top: 0;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #228b45;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .preview-section {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+
+    .preview-section h4 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .button-group button {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .button-secondary {
+      background-color: #6c757d;
+    }
+
+    .button-secondary:hover {
+      background-color: #545b62;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      .header h1 {
+        font-size: 28px;
+      }
+      
+      .header p {
+        font-size: 16px;
+      }
+      
+      .form-container {
+        padding: 20px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      .button-group button {
+        flex: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎁 Create Your Gift Card</h1>
+    <p>Design a personalized scratch card gift for someone special</p>
+  </div>
+
+  <div class="form-container">
+    <a href="../" class="back-link">← Back to Example</a>
+    
+    <h2>Gift Card Details</h2>
+    
+    <div class="form-group">
+      <label for="sender-name">Your Name</label>
+      <input type="text" id="sender-name" placeholder="Enter your name" value="John Doe">
+    </div>
+    
+    <div class="form-group">
+      <label for="amount">Gift Amount</label>
+      <input type="number" id="amount" value="50" min="1" max="1000">
+    </div>
+    
+    <div class="form-group">
+      <label for="message">Message Before Scratch</label>
+      <input type="text" id="message" value="🎁 Scratch for a surprise!" placeholder="🎁 Your message here">
+    </div>
+    
+    <div class="form-group">
+      <label for="email">Your Email (for recipient to contact)</label>
+      <input type="email" id="email" placeholder="your@email.com">
+    </div>
+    
+    <button id="generate-button">Generate Shareable Link</button>
+    
+    <div id="result" class="hidden">
+      <div class="preview-section">
+        <h4>Your Gift Card Link:</h4>
+        <div class="link-box">
+          <input type="text" id="share-link" readonly>
+          <button id="copy-button">Copy</button>
+        </div>
+        
+        <div class="button-group">
+          <button id="preview-button">Preview Card</button>
+          <button id="share-button" class="button-secondary">Share Link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL handling functions
+    function encryptData(data, key = "pepegift") {
+      const jsonStr = JSON.stringify(data);
+      let encrypted = '';
+      for (let i = 0; i < jsonStr.length; i++) {
+        const charCode = jsonStr.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+        encrypted += String.fromCharCode(charCode);
+      }
+      return btoa(encodeURIComponent(encrypted));
+    }
+
+    function generateUniqueId() { 
+      return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); 
+    }
+
+    function createShareableUrl(params) {
+      const compactData = { n: params.name, a: params.amount, m: params.message, e: params.email };
+      // Get the base URL without /config
+      const currentUrl = window.location.href;
+      const baseUrl = currentUrl.includes('/config') 
+        ? currentUrl.split('/config')[0] + '/'
+        : window.location.origin + '/';
+      return `${baseUrl}?c=${encryptData(compactData)}`;
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          console.log('Text copied to clipboard');
+          showCopyFeedback();
+        })
+        .catch((err) => {
+          console.error('Could not copy text: ', err);
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            showCopyFeedback();
+          } catch (err) {
+            console.error('Fallback copy failed: ', err);
+          }
+          document.body.removeChild(textArea);
+        });
+    }
+
+    function showCopyFeedback() {
+      const copyButton = document.getElementById('copy-button');
+      const originalText = copyButton.textContent;
+      copyButton.textContent = 'Copied!';
+      copyButton.style.backgroundColor = '#28a745';
+      setTimeout(() => {
+        copyButton.textContent = originalText;
+        copyButton.style.backgroundColor = '';
+      }, 2000);
+    }
+
+    function validateForm() {
+      const name = document.getElementById('sender-name').value.trim();
+      const amount = document.getElementById('amount').value;
+      const email = document.getElementById('email').value.trim();
+      
+      if (!name) {
+        alert('Please enter your name');
+        return false;
+      }
+      
+      if (!amount || amount < 1 || amount > 1000) {
+        alert('Please enter a valid amount between 1 and 1000');
+        return false;
+      }
+      
+      if (!email) {
+        alert('Please enter your email address');
+        return false;
+      }
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert('Please enter a valid email address');
+        return false;
+      }
+      
+      return true;
+    }
+
+    // Initialize form event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('generate-button').addEventListener('click', function() {
+        if (!validateForm()) return;
+        
+        const cardData = {
+          id: generateUniqueId(),
+          name: document.getElementById('sender-name').value.trim(),
+          amount: document.getElementById('amount').value,
+          message: document.getElementById('message').value.trim(),
+          email: document.getElementById('email').value.trim()
+        };
+        
+        const shareableUrl = createShareableUrl(cardData);
+        document.getElementById('share-link').value = shareableUrl;
+        document.getElementById('result').classList.remove('hidden');
+        
+        // Scroll to result
+        document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+      });
+      
+      document.getElementById('copy-button').addEventListener('click', function() {
+        const link = document.getElementById('share-link').value;
+        copyToClipboard(link);
+      });
+      
+      document.getElementById('preview-button').addEventListener('click', function() {
+        const link = document.getElementById('share-link').value;
+        window.open(link, '_blank');
+      });
+      
+      document.getElementById('share-button').addEventListener('click', function() {
+        const link = document.getElementById('share-link').value;
+        
+        if (navigator.share) {
+          navigator.share({
+            title: 'Scratch Card Gift',
+            text: 'I\'ve created a special scratch card gift for you!',
+            url: link
+          }).catch(console.error);
+        } else {
+          // Fallback - copy to clipboard
+          copyToClipboard(link);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
